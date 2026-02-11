@@ -153,6 +153,14 @@ def _monitor_process(process: subprocess.Popen, slug: str) -> None:
         report_sync_service.sync_status_file_to_storage()
 
     else:
+        import signal
+
+        if retcode < 0:
+            sig = -retcode
+            sig_name = signal.Signals(sig).name if sig in signal.Signals._value2member_map_ else f"signal {sig}"
+            logger.error(f"Pipeline process for {slug} was killed by {sig_name} (exit code {retcode})")
+        else:
+            logger.error(f"Pipeline process for {slug} exited with code {retcode}")
         set_status(slug, "error")
 
 

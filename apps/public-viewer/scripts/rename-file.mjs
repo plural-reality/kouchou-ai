@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { access, copyFile, rename, unlink } from "node:fs/promises";
+import { access, cp, copyFile, rename, rm, stat, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 
 let ignoreFiles = [];
@@ -13,9 +13,9 @@ if (process.env.NEXT_PUBLIC_OUTPUT_MODE === "export") {
 }
 
 /**
- * Rename a file with fallback to copy+delete for cross-device operations
- * @param {string} oldPath - Source file path
- * @param {string} newPath - Destination file path
+ * Rename a file or directory with fallback to copy+delete for cross-device operations
+ * @param {string} oldPath - Source path
+ * @param {string} newPath - Destination path
  */
 async function renameWithFallback(oldPath, newPath) {
   try {
@@ -24,8 +24,14 @@ async function renameWithFallback(oldPath, newPath) {
     // EXDEV error occurs when trying to rename across different filesystems/mount points
     // Fall back to copy+delete approach
     if (error.code === "EXDEV") {
-      await copyFile(oldPath, newPath);
-      await unlink(oldPath);
+      const s = await stat(oldPath);
+      if (s.isDirectory()) {
+        await cp(oldPath, newPath, { recursive: true });
+        await rm(oldPath, { recursive: true });
+      } else {
+        await copyFile(oldPath, newPath);
+        await unlink(oldPath);
+      }
     } else {
       throw error;
     }

@@ -31,6 +31,10 @@ services:
       - ./apps/api:/app
     environment:
       - LOG_LEVEL=debug
+      # Apple Silicon Docker: prevent numba/llvmlite from generating SVE2
+      # instructions that cause SIGILL in UMAP/pynndescent
+      - NUMBA_CPU_NAME=cortex-a72
+      - NUMBA_CPU_FEATURES=
     env_file:
       - .env
     restart: unless-stopped
